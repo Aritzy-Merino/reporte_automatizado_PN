@@ -1,0 +1,7 @@
+---
+title: "Información sobre este sitio"
+---
+
+Descripción de `datos`: la BD comprende la incidencia delictiva presentada por el Secretarido Ejecutivo, desde un punto de vista de los casos mas no de las víctimas. El periodo de recopilación va de 2015 a 2021. Las tasas se construyen conforme el total de incidentes entre el total de población del estado por cada cien mil habitantes. 
+
+[página para descarga de datos](https://www.gob.mx/sesnsp/acciones-y-programas/incidencia-delictiva-del-fuero-comun-nueva-metodologia?state=published)

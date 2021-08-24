@@ -1,0 +1,8 @@
+name: "my-website"
+navbar:
+  title: "Visualizador de incidencia delictiva"
+  left:
+    - text: "Home"
+      href: index.html
+    - text: "About"
+      href: about.html

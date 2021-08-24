@@ -1,0 +1,142 @@
+---
+title: "Reporte incidencia delictiva SE-SNSP"
+author: "Madison - ASM"
+output:
+  flexdashboard::flex_dashboard:
+    orientation: column
+    social: menu
+    vertical_layout: fill
+    runtime: shiny
+---
+
+```{r data, include=FALSE}
+library(pacman)
+p_load(readr, tidyverse, plyr, dplyr, tidyr, reshape, scales, ggplot2, kableExtra, ggthemes, ggrepel, data.table, zoo, flexdashboard, flextable, DT, datasets, lubridate, shiny, shinyWidgets,  rsconnect)
+
+setwd("/Users/ASM/Documents/Rizika/Incidencia delictiva/")
+
+#incidencia fuero común
+incidencia_agrupada <- read_csv("/Users/ASM/Documents/Rizika/Incidencia delictiva/bases de ingesta/incidencia_agrupada.csv", 
+                       locale = locale(encoding = "latin1"))
+
+incidencia_agrupada <- incidencia_agrupada %>% 
+  select(Entidad, delito, fecha_amd, total_mes, total_12_meses, tasa_anual, tasa_anual_pasada, tasa_cambio )
+
+delitos <- unique(incidencia_agrupada$delito)
+
+max_year <- max(incidencia_agrupada$fecha_amd)
+
+prev_year <- max_year - lubridate::years(1)
+
+
+
+```
+
+
+
+Sidebar {.sidebar}
+=======================================================================
+
+<!-- Descripción de `datos`: la BD comprende la incidencia delictiva presentada por el Secretarido Ejecutivo, desde un punto de vista de los casos mas no de las víctimas. El periodo de recopilación va de 2015 a 2021. Las tasas se construyen conforme el total de incidentes entre el total de población del estado por cada cien mil habitantes.  -->
+
+<!-- [página para descarga de datos](https://www.gob.mx/sesnsp/acciones-y-programas/incidencia-delictiva-del-fuero-comun-nueva-metodologia?state=published) -->
+
+
+
+En esta sección se selecciona la temporalidad de interés y los delitos de interés
+
+```{r}
+
+# dateInput("single_date", "Selecciona la fecha:", value = mean(incidencia_agrupada$fecha_amd), min = min(incidencia_agrupada$fecha_amd), max = max(incidencia_agrupada$fecha_amd), format = "yyyy-mm-dd")
+                      
+dateRangeInput("range_date", "Selecciona el rango de fechas:", start = prev_year, end = max(incidencia_agrupada$fecha_amd), min = min(incidencia_agrupada$fecha_amd), max = max(incidencia_agrupada$fecha_amd),  format = "yyyy-mm-dd" )
+                      
+selectInput("sel_delito", "Selecciona delito de interés", choices = unique(incidencia_agrupada$delito) )
+
+# selectInput("sel_entidad", "Selecciona entidad de interés", choices = unique(incidencia_agrupada$Entidad))
+
+shinyWidgets::pickerInput('sel_entidad','Selecciona entidad de interés', choices = unique(incidencia_agrupada$Entidad),
+                          options = list(`actions-box` = T), multiple = T, selected = 32)
+    
+
+```
+
+
+Tabla de incidencia
+=======================================================================
+
+Column
+-----------------------------------------------------------------------
+
+### Incidencia delictiva por periodo de interés
+
+```{r}
+data_interactiva <- reactive({
+            test <- incidencia_agrupada[(incidencia_agrupada$delito %in% input$sel_delito) & incidencia_agrupada$fecha_amd >= input$range_date[1] & incidencia_agrupada$fecha_amd <= input$range_date[2],]
+           
+            
+        })
+        
+renderDataTable( {
+  data_interactiva()})
+    
+```
+
+
+Gráfica de totales anuales
+=======================================================================
+
+### Totales mensuales
+
+```{r}
+data_interactiva <- reactive({
+            test <- incidencia_agrupada[(incidencia_agrupada$delito %in% input$sel_delito) &  incidencia_agrupada$Entidad %in% input$sel_entidad & incidencia_agrupada$fecha_amd >= input$range_date[1] & incidencia_agrupada$fecha_amd <= input$range_date[2],]
+           
+            
+        })
+        
+renderPlot({ 
+            ggplot(data_interactiva(), aes(x= fecha_amd, y= total_mes)) + geom_bar(stat="identity", fill = "#00586F") +  geom_text(aes(label=total_mes),hjust=0,vjust=-.5, size = 5)
+        
+        })
+```
+
+
+Gráfica de tasas anuales
+=======================================================================
+
+### Tasas anuales (últimos 12 meses)
+
+```{r}
+data_interactiva <- reactive({
+            test <- incidencia_agrupada[(incidencia_agrupada$delito %in% input$sel_delito) &  incidencia_agrupada$Entidad %in% input$sel_entidad & incidencia_agrupada$fecha_amd >= input$range_date[1] & incidencia_agrupada$fecha_amd <= input$range_date[2],]
+           
+            
+        })
+        
+renderPlot({ 
+            ggplot(data_interactiva(), aes(x= fecha_amd, y= tasa_anual)) + geom_line(aes(colour = Entidad)) +  geom_text(aes(label=ifelse(fecha_amd>=max_year, as.character(Entidad),'')),hjust=0,vjust=0, size = 2)
+        
+        })
+```
+
+
+Gráfica de tasas de cambio
+=======================================================================
+
+### Tendencias inter-anuales (comparativa del periodo actual de 12 meses con el anterior)
+
+```{r}
+data_interactiva <- reactive({
+            test <- incidencia_agrupada[(incidencia_agrupada$delito %in% input$sel_delito) &  incidencia_agrupada$Entidad %in% input$sel_entidad & incidencia_agrupada$fecha_amd >= input$range_date[1] & incidencia_agrupada$fecha_amd <= input$range_date[2],]
+           
+            
+        })
+        
+renderPlot({ 
+            ggplot(data_interactiva(), aes(x= fecha_amd, y= tasa_cambio)) + geom_line(aes(colour = Entidad)) +  geom_text(aes(label=ifelse(fecha_amd>=max_year, as.character(Entidad),'')),hjust=0,vjust=0, size = 2)
+        
+        })
+
+```
+
